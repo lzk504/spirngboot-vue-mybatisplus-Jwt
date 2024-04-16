@@ -10,6 +10,7 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.AccessDeniedException;
@@ -26,6 +27,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import java.io.IOException;
 import java.io.PrintWriter;
 
+@Slf4j
 @Configuration
 public class SecurityConfiguration {
 
@@ -77,10 +79,10 @@ public class SecurityConfiguration {
         response.setContentType("application/json");
         PrintWriter writer = response.getWriter();
         String authorization = request.getHeader("Authorization");
-        if(jwtUtils.invalidateJwt(authorization)){
+        if (jwtUtils.invalidateJwt(authorization)) {
             writer.write(RestBean.success().asJsonString());
-        }else {
-            writer.write(RestBean.failure(400,"退出登录失败").asJsonString());
+        } else {
+            writer.write(RestBean.failure(400, "退出登录失败").asJsonString());
         }
     }
 
@@ -106,13 +108,13 @@ public class SecurityConfiguration {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json");
         User user = (User) authentication.getPrincipal();
-        DtoAccount account = accountService.findAccountByUsernameOrEmail(user.getUsername());
-        String token = jwtUtils.createJwt(user, account.getId(), account.getUsername());
-        AuthorizeVo authorizeVo = new AuthorizeVo();
-        authorizeVo.setExpire(jwtUtils.expireTime());
-        authorizeVo.setRole(account.getRole());
-        authorizeVo.setToken(token);
-        authorizeVo.setUsername(account.getUsername());
+        DtoAccount dtoAccount = accountService.findAccountByUsernameOrEmail(user.getUsername());
+        String token = jwtUtils.createJwt(user, dtoAccount.getId(), dtoAccount.getUsername());
+        //将dto里的数据搬运到vo中，在前端页面展示
+        AuthorizeVo authorizeVo = dtoAccount.asViewObject(AuthorizeVo.class, v -> {
+            v.setExpire(jwtUtils.expireTime());
+            v.setToken(token);
+        });
         response.getWriter().write(RestBean.success(authorizeVo).asJsonString());
 
     }

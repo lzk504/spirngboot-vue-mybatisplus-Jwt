@@ -49,7 +49,7 @@ public class JwtUtils {
 
     }
 
-    //删除令牌
+    //删除令牌(拉入黑名单)
     private boolean deleteToken(String uuid, Date time) {
         if (this.isInvalidToken(uuid))
             return false;
