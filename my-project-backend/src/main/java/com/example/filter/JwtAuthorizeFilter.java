@@ -21,6 +21,10 @@ public class JwtAuthorizeFilter extends OncePerRequestFilter {
     @Resource
     JwtUtils jwtUtils;
 
+    /**
+     * 用于对请求头中Jwt令牌进行校验的工具，为当前请求添加用户验证信息
+     * 并将用户的ID存放在请求对象属性中，方便后续使用
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
