@@ -1,7 +1,9 @@
 package com.example.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.DtoAccount;
+import com.example.entity.vo.request.EmailRegisterVo;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
@@ -13,8 +15,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +37,9 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, DtoAccount> i
 
     @Resource
     StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    PasswordEncoder encoder;
 
     /**
      * 从数据库中通过用户名或邮箱查找用户详细信息
@@ -81,16 +88,71 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, DtoAccount> i
     public String registerEmailVerifyCode(String type, String email, String ip) {
 
         synchronized (ip.intern()) {
-            if(!this.verifyLimit(ip))
+            if (!this.verifyLimit(ip))
                 return "请求频繁，请稍后再试";
             Random random = new Random();
             int code = random.nextInt(899999) + 100000;
-            Map<String, Object> data = Map.of("type",type,"email", email, "code", code);
+            Map<String, Object> data = Map.of("type", type, "email", email, "code", code);
             amqpTemplate.convertAndSend(Const.MQ_MAIL, data);
             stringRedisTemplate.opsForValue()
                     .set(Const.VERIFY_EMAIL_DATA + email, String.valueOf(code), 3, TimeUnit.MINUTES);
             return null;
         }
+    }
+
+    /**
+     * 注册新用户
+     * @param emailRegisterVo 用户注册信息表
+     * @return 如果在注册过程中有错误返回错误信息
+     */
+    @Override
+    public String registerAccount(EmailRegisterVo emailRegisterVo) {
+        String username = emailRegisterVo.getUsername();
+        String email = emailRegisterVo.getEmail();
+        String key = Const.VERIFY_EMAIL_DATA + email;
+        String code = stringRedisTemplate.opsForValue().get(key);
+        if (code == null) {
+            return "请先获取验证码";
+        }
+        if (!code.equals(emailRegisterVo.getCode())) {
+            return "验证码错误";
+        }
+        if (this.existAccountByEmail(email)) {
+            return "此电子邮件已被其他用户注册";
+        }
+        if (this.existAccountByUsername(username)) {
+            return "改用户名已经被注册，请更换一个新的用户名";
+        }
+        String password = encoder.encode(emailRegisterVo.getPassword());
+        emailRegisterVo.setPassword(password);
+        DtoAccount account = new DtoAccount(null, username, password, email, "user", new Date());
+        if (this.save(account)) {
+            stringRedisTemplate.delete(key);
+            return null;
+        }else {
+            return "内部错误，请联系管理员";
+        }
+
+    }
+
+    /**
+     * 判断注册用户的邮箱是否已存在
+     *
+     * @param email 邮件
+     * @return false存在, true不存在
+     */
+    private boolean existAccountByEmail(String email) {
+        return this.baseMapper.exists(Wrappers.<DtoAccount>query().eq("email", email));
+    }
+
+    /**
+     * 判断注册用户的用户名是否已存在
+     *
+     * @param username 用户名
+     * @return false存在, true不存在
+     */
+    private boolean existAccountByUsername(String username) {
+        return this.baseMapper.exists(Wrappers.<DtoAccount>query().eq("username", username));
     }
 
     /**

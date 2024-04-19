@@ -26,7 +26,7 @@ spring:
     redis:
       database: 0
       host: 127.0.0.1
-      port: 6001
+      port: 6379
   rabbitmq:
     addresses: 114.55.86.138
     username: admin

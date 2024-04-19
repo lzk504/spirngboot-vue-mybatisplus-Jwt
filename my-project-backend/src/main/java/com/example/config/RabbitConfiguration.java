@@ -12,15 +12,15 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class RabbitConfiguration {
-
     @Bean("mailQueue")
-    public Queue queue(){
+    public Queue queue() {
         return QueueBuilder
                 .durable("mail")
                 .build();
     }
+
     @Bean
-    public MessageConverter messageConverter(){
+    public MessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 }
