@@ -1,17 +1,18 @@
 package com.example.service.impl;
-
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.DtoAccount;
+import com.example.entity.vo.request.ConfirmResetVo;
 import com.example.entity.vo.request.EmailRegisterVo;
+import com.example.entity.vo.request.EmailResetVo;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
 import com.example.utils.FlowUtils;
+import com.example.utils.RedisUtils;
 import jakarta.annotation.Resource;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
+
 
 
 @Service
@@ -36,7 +37,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, DtoAccount> i
     AmqpTemplate amqpTemplate;
 
     @Resource
-    StringRedisTemplate stringRedisTemplate;
+    RedisUtils redisUtils;
 
     @Resource
     PasswordEncoder encoder;
@@ -94,14 +95,14 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, DtoAccount> i
             int code = random.nextInt(899999) + 100000;
             Map<String, Object> data = Map.of("type", type, "email", email, "code", code);
             amqpTemplate.convertAndSend(Const.MQ_MAIL, data);
-            stringRedisTemplate.opsForValue()
-                    .set(Const.VERIFY_EMAIL_DATA + email, String.valueOf(code), 3, TimeUnit.MINUTES);
+            redisUtils.storeCodeByEmail(email,String.valueOf(code),3);
             return null;
         }
     }
 
     /**
      * 注册新用户
+     *
      * @param emailRegisterVo 用户注册信息表
      * @return 如果在注册过程中有错误返回错误信息
      */
@@ -109,8 +110,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, DtoAccount> i
     public String registerAccount(EmailRegisterVo emailRegisterVo) {
         String username = emailRegisterVo.getUsername();
         String email = emailRegisterVo.getEmail();
-        String key = Const.VERIFY_EMAIL_DATA + email;
-        String code = stringRedisTemplate.opsForValue().get(key);
+        String code = redisUtils.getEmailVerityCode(email);
         if (code == null) {
             return "请先获取验证码";
         }
@@ -127,13 +127,54 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, DtoAccount> i
         emailRegisterVo.setPassword(password);
         DtoAccount account = new DtoAccount(null, username, password, email, "user", new Date());
         if (this.save(account)) {
-            stringRedisTemplate.delete(key);
+            redisUtils.deleteEmailVerifyCode(email);
             return null;
-        }else {
+        } else {
             return "内部错误，请联系管理员";
         }
 
     }
+
+    /**
+     * 重置密码确认操作，验证验证码是否正确
+     * @param confirmResetVo 验证码基本信息
+     * @return 操作结果，null表示正常，否则为错误原因
+     */
+    @Override
+    public String resetConfirm(ConfirmResetVo confirmResetVo) {
+        String email = confirmResetVo.getEmail();
+        String code = redisUtils.getEmailVerityCode(email);
+        if (code == null) {
+            return "请先获取验证码";
+        }
+        if (!code.equals(confirmResetVo.getCode())) {
+            return "验证码错误";
+        }
+
+        return null;
+    }
+
+    /**
+     *重置密码操作，需要先确认重置验证码是否正确
+     * @param emailResetVo 重置基本信息
+     * @return 操作结果，null表示正常，否则为错误原因
+     */
+    @Override
+    public String resetEmailAccountPassword(EmailResetVo emailResetVo) {
+        String email = emailResetVo.getEmail();
+        String verify = this.resetConfirm(new ConfirmResetVo(email, emailResetVo.getCode()));
+        if (verify != null) {
+            return verify;
+        }
+        String password = encoder.encode(emailResetVo.getPassword());
+        boolean update = this.update().eq("email", email).set("password", password).update();
+        if (update) {
+            redisUtils.deleteEmailVerifyCode(email);
+        }
+        return null;
+    }
+
+
 
     /**
      * 判断注册用户的邮箱是否已存在
@@ -165,4 +206,5 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, DtoAccount> i
         String key = Const.VERIFY_EMAIL_LIMIT + ip;
         return flowUtils.limitOnceCheck(key, Limit);
     }
+
 }

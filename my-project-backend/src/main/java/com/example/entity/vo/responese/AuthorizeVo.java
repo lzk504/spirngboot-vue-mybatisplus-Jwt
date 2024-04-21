@@ -1,4 +1,4 @@
-package com.example.entity.vo.request;
+package com.example.entity.vo.responese;
 
 import lombok.Data;
 

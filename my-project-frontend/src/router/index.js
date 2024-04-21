@@ -12,11 +12,15 @@ const router = createRouter({
                 {
                     path: '',
                     name: 'welcome-login',
-                    component: () => import ('@/View/welcome/loginPage.vue'),
+                    component: () => import ('@/View/welcome/LoginPage.vue'),
                 }, {
-                    path:'/register',
-                    name:'welcome-register',
-                    component:()=>import('@//View/welcome/RegisterPage.vue')
+                    path: '/register',
+                    name: 'welcome-register',
+                    component: () => import('@//View/welcome/RegisterPage.vue')
+                }, {
+                    path: '/reset',
+                    name: 'welcome-reset',
+                    component: () => import('@/View/welcome/ResetPage.vue')
                 }
             ]
         }, {
