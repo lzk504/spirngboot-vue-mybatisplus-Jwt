@@ -14,7 +14,11 @@
       <div>在这里有好多实用工具</div>
     </div>
     <div style=" width: 400px;z-index: 1;background-color: white;">
-     <router-view/>
+        <router-view v-slot="{ Component }">
+          <transition name="el-zoom-in-center" mode="out-in" style="height: 100%">
+            <component :is="Component" />
+          </transition>
+        </router-view>
     </div>
   </div>
 </template>

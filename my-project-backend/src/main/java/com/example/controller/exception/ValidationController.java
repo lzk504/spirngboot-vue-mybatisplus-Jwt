@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ValidationController {
     /**
      * 与SpringBoot保持一致，校验不通过打印警告信息，而不是直接抛出异常
-     * @param e 异常
+     * @param exception 异常
      * @return 校验结果
      */
     @ExceptionHandler(ValidationException.class)

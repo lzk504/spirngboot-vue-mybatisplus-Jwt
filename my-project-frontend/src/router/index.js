@@ -13,6 +13,10 @@ const router = createRouter({
                     path: '',
                     name: 'welcome-login',
                     component: () => import ('@/View/welcome/loginPage.vue'),
+                }, {
+                    path:'/register',
+                    name:'welcome-register',
+                    component:()=>import('@//View/welcome/RegisterPage.vue')
                 }
             ]
         }, {
@@ -25,9 +29,9 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
     const isUnauthorized = unauthorized()
-    if(to.name.startsWith('welcome') && !isUnauthorized) {
+    if (to.name.startsWith('welcome') && !isUnauthorized) {
         next('/index')
-    } else if(to.fullPath.startsWith('/index') && isUnauthorized) {
+    } else if (to.fullPath.startsWith('/index') && isUnauthorized) {
         next('/')
     } else {
         next()
