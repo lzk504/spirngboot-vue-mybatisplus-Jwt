@@ -5,6 +5,8 @@ import com.example.entity.vo.request.ConfirmResetVo;
 import com.example.entity.vo.request.EmailRegisterVo;
 import com.example.entity.vo.request.EmailResetVo;
 import com.example.service.AccountService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -18,6 +20,7 @@ import java.util.function.Supplier;
 @Validated
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "登录校验相关", description = "包括用户登录、注册、验证码请求等操作。")
 public class AuthorizeController {
 
     @Resource
@@ -32,6 +35,7 @@ public class AuthorizeController {
      * @return 是否请求成功
      */
     @GetMapping("/ask-code")
+    @Operation(summary = "请求邮件验证码")
     public RestBean<Void> askVerityCode(@RequestParam @Email String email,
                                         @RequestParam @Pattern(regexp = "(register|reset)") String type,
                                         HttpServletRequest request) {
@@ -48,16 +52,19 @@ public class AuthorizeController {
      * @return 是否请求成功
      */
     @PostMapping("/register")
+    @Operation(summary = "用户注册操作")
     public RestBean<Void> register(@RequestBody @Valid EmailRegisterVo vo) {
         return this.messageHandle(() -> accountService.registerAccount(vo));
     }
 
     @PostMapping("/reset-confirm")
+    @Operation(summary = "密码重置确认")
     public RestBean<Void> resetConfirm(@RequestBody @Valid ConfirmResetVo vo) {
         return this.messageHandle(() -> accountService.resetConfirm(vo));
     }
 
     @PostMapping("/reset-password")
+    @Operation(summary = "密码重置操作")
     public RestBean<Void> resetPassword(@RequestBody @Valid EmailResetVo vo) {
         return this.messageHandle(() -> accountService.resetEmailAccountPassword(vo));
     }

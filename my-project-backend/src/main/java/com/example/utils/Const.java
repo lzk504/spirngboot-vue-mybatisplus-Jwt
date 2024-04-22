@@ -21,4 +21,10 @@ public class Const {
     public final static String FLOW_LIMIT_COUNTER = "flow:counter:";
     public final static String FLOW_LIMIT_BLOCK = "flow:block:";
 
+    //请求自定义属性
+    public final static String ATTR_USER_ID = "userId";
+    //用户角色
+    public final static String ROLE_DEFAULT = "user";
+
+
 }

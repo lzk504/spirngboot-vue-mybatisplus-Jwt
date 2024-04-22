@@ -5,6 +5,7 @@ import com.example.entity.dto.DtoAccount;
 import com.example.entity.vo.responese.AuthorizeVo;
 import com.example.filter.JwtAuthorizeFilter;
 import com.example.service.AccountService;
+import com.example.utils.Const;
 import com.example.utils.JwtUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
@@ -41,8 +42,9 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(conf -> conf
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/auth/**","/error").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .anyRequest().hasAnyRole(Const.ROLE_DEFAULT))
                 .formLogin(conf -> conf
                         .loginProcessingUrl("/api/auth/login")
                         .successHandler(this::onAuthenticationSuccess)

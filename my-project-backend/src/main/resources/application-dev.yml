@@ -1,4 +1,8 @@
 # 开发环境配置
+springdoc:
+  paths-to-match: /api/**
+  swagger-ui:
+    operations-sorter: alpha
 spring:
   mail:
     host: smtp.163.com
@@ -39,6 +43,3 @@ spring:
       period: 3
       limit: 10
       block: 30
-logging:
-  level:
-    root: info
