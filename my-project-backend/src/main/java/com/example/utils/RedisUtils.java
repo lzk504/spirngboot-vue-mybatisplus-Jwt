@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RedisUtils {
 
-    private static final String VERIFY_EMAIL_DATA = "VERIFY_EMAIL_DATA:";
     @Resource
     StringRedisTemplate stringRedisTemplate;
 
@@ -22,7 +21,7 @@ public class RedisUtils {
      * @return 验证码
      */
     public String getEmailVerityCode(String email){
-        String key = VERIFY_EMAIL_DATA + email;
+        String key = Const.VERIFY_EMAIL_DATA + email;
         return stringRedisTemplate.opsForValue().get(key);
     }
 
@@ -33,7 +32,7 @@ public class RedisUtils {
      * @param timeout 过期时间
      */
     public void storeCodeByEmail(String email, String code,int timeout) {
-        String key = VERIFY_EMAIL_DATA + email;
+        String key = Const.VERIFY_EMAIL_DATA + email;
         stringRedisTemplate.opsForValue()
                 .set(key, String.valueOf(code), timeout, TimeUnit.MINUTES);
     }
@@ -43,7 +42,7 @@ public class RedisUtils {
      * @param email 电邮
      */
     public void deleteEmailVerifyCode(String email) {
-        String key = VERIFY_EMAIL_DATA + email;
+        String key = Const.VERIFY_EMAIL_DATA + email;
         stringRedisTemplate.delete(key);
     }
 
